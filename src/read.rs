@@ -237,6 +237,10 @@ fn central_header_to_zip_file<R: Read+io::Seek>(reader: &mut R) -> ZipResult<Zip
     let magic_and_header = 4 + 22 + 2 + 2;
     let data_start = offset + magic_and_header + file_name_length + extra_field_length;
 
+    let tm = match ::time::Tm::from_msdos(MsDosDateTime::new(last_mod_time, last_mod_date)) {
+        Ok(t) => t,
+        Err(_) => ::time::now(),
+    };
     // Construct the result
     let mut result = ZipFileData
     {
@@ -244,7 +248,7 @@ fn central_header_to_zip_file<R: Read+io::Seek>(reader: &mut R) -> ZipResult<Zip
         version_made_by: version_made_by as u8,
         encrypted: encrypted,
         compression_method: CompressionMethod::from_u16(compression_method),
-        last_modified_time: try!(::time::Tm::from_msdos(MsDosDateTime::new(last_mod_time, last_mod_date))),
+        last_modified_time: tm,
         crc32: crc32,
         compressed_size: compressed_size as u64,
         uncompressed_size: uncompressed_size as u64,
